@@ -1,0 +1,29 @@
+# Ignore all JavaScript files:
+#*.js
+*.d.ts
+
+# Ignore specific files :
+.next/*
+yarn-error.log
+README.md
+*.lock
+
+# Ignore directories :
+
+# ignore environment files
+.env.development
+.env.production
+
+# ignore configuration files
+tsconfig.json
+.eslintrc.cjs
+.eslintrc.json
+.prettierrc.json
+
+# ignore specific directories
+public
+images
+scripts
+node_modules
+out
+.vscode
