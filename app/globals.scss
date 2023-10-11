@@ -63,3 +63,13 @@
     @apply h-[100dvh] sm:h-screen sm:overflow-hidden;
   }
 }
+@keyframes forceRepaint {
+  0%, 100% {
+    border-radius: 10px;
+  }
+}
+
+.progress-bar {
+  animation: forceRepaint 0.1s forwards;
+  /* rest of your styles, e.g., box-shadow */
+}
