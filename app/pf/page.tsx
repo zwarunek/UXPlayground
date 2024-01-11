@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {drawGrid, drawLine, getGridKeys, isWithinPillShape, Point, removeGrid} from "@/app/pf/pfUtils";
+import {cn} from "@/lib/utils";
 
 type GridItem = {
   type: "blank" | "wall";
@@ -73,14 +74,16 @@ export default function PFPage() {
   const mainCanvas = useRef<HTMLCanvasElement>(null);
   const cursorCanvas = useRef<HTMLCanvasElement>(null);
   const gridLineCanvas = useRef<HTMLCanvasElement>(null);
+  const traceCanvas = useRef<HTMLCanvasElement>(null);
   const [toolSize, setToolSize] = React.useState(5);
   const [offset, setOffset] = React.useState(0);
   const gridState = useRef(new Grid(rows, cols, "blank"));
   const tool = useRef<"blank" | "wall" | undefined>(undefined);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const [showGrid, setShowGrid] = React.useState<boolean>(true);
+  const [showGrid, setShowGrid] = React.useState<boolean>(false);
   const lastMousePos = useRef<{x: number, y: number} | undefined>(undefined);
   const settings = useRef<Settings>({rows, cols, squareSize, toolSize});
+  const [showTrace, setShowTrace] = React.useState<boolean>(false);
 
   useEffect(() => {
     settings.current = {rows, cols, squareSize, toolSize};
@@ -89,12 +92,15 @@ export default function PFPage() {
   useLayoutEffect(() => {
     const shouldShowGrid: boolean = localStorage.getItem("showGrid") === "true";
     setShowGrid(shouldShowGrid);
+    const shouldShowTrace: boolean = localStorage.getItem("showTrace") === "true";
+    setShowTrace(shouldShowTrace);
     const ctx = mainCanvas.current?.getContext("2d");
     if (ctx) {
       ctx.translate(0.5, 0.5);
       ctxRef.current = ctx;
     }
-    initGrid(shouldShowGrid);
+    initGrid();
+    drawGrid(gridLineCanvas.current, {rows, cols, squareSize});
   }, []);
 
   function drawSquare({ gridItem }: { gridItem: GridItem }) {
@@ -109,16 +115,26 @@ export default function PFPage() {
     ctx.restore();
   }
 
-  function initGrid(showGrid: boolean) {
+  function initGrid() {
     gridState.current = new Grid(rows, cols, "blank");
-
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
     ctx?.reset();
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = "black";
     ctx?.fillRect(0, 0, cols * squareSize, rows * squareSize);
-    if (showGrid) drawGrid(gridLineCanvas.current, settings.current);
+    traceCanvas.current?.getContext("2d")?.reset();
+  }
+  
+  function drawTrace(x: number, y: number) {
+    const ctx2 = traceCanvas.current?.getContext("2d");
+    if (lastMousePos.current && ctx2 && tool.current) {
+      ctx2.lineWidth = 5;
+      ctx2.lineCap = "round";
+      ctx2.lineJoin = "round";
+      
+      drawLine(ctx2, lastMousePos.current.x, lastMousePos.current.y, x, y);
+    }
   }
 
   
@@ -131,7 +147,7 @@ export default function PFPage() {
       >
         <Button
           onClick={() => {
-            initGrid(showGrid);
+            initGrid();
           }}
         >
           Reset
@@ -150,9 +166,16 @@ export default function PFPage() {
             if (typeof checked !== "boolean") return;
             setShowGrid(checked);
             localStorage.setItem("showGrid", checked.toString());
-            checked ? drawGrid(gridLineCanvas.current, settings.current) : removeGrid(gridLineCanvas.current);
           }}
           checked={showGrid}
+        />
+        <Checkbox
+          onCheckedChange={(checked) => {
+            if (typeof checked !== "boolean") return;
+            setShowTrace(checked);
+            localStorage.setItem("showTrace", checked.toString());
+          }}
+          checked={showTrace}
         />
       </div>
       <div
@@ -160,7 +183,7 @@ export default function PFPage() {
           "flex h-full w-full flex-col items-center justify-center p-12"
         }
       >
-        <div className={` border border-white cursor-none`}>
+        <div className={` cursor-none border border-white`}>
           <div
             style={{ width: cols * squareSize, height: rows * squareSize }}
             className={" relative"}
@@ -175,7 +198,13 @@ export default function PFPage() {
               ref={gridLineCanvas}
               width={cols * squareSize}
               height={rows * squareSize}
-              className={`pointer-events-none absolute left-0 top-0 z-[9]`}
+              className={cn(`pointer-events-none absolute left-0 top-0 z-[9] opacity-50`, !showGrid && "hidden")}
+            />
+            <canvas
+              ref={traceCanvas}
+              width={cols * squareSize}
+              height={rows * squareSize}
+              className={cn(`pointer-events-none absolute left-0 top-0 z-[8] opacity-50`, !showTrace && "hidden")}
             />
             <canvas
               ref={mainCanvas}
@@ -186,7 +215,12 @@ export default function PFPage() {
                 //remove current text selection
                 window.getSelection()?.removeAllRanges();
 
-                const keys = getGridKeys(e, mainCanvas.current, settings.current, lastMousePos.current);
+                const keys = getGridKeys(
+                  e,
+                  mainCanvas.current,
+                  settings.current,
+                  lastMousePos.current,
+                );
                 if (!keys) return;
                 const key = keys[0];
                 const type = gridState.current.getItem(key)?.type;
@@ -227,7 +261,12 @@ export default function PFPage() {
                   const x = e.clientX - rect.left;
                   const y = e.clientY - rect.top;
 
-                  const keys = getGridKeys(e, mainCanvas.current, settings.current, lastMousePos.current);
+                  const keys = getGridKeys(
+                    e,
+                    mainCanvas.current,
+                    settings.current,
+                    lastMousePos.current,
+                  );
                   if (!keys) return;
                   const changedItems: GridItem[] = [];
                   keys.forEach((key) => {
@@ -251,9 +290,7 @@ export default function PFPage() {
                   changedItems.forEach((gridItem) => {
                     drawSquare({ gridItem });
                   });
-                  const ctx2 = mainCanvas.current?.getContext("2d");
-                  if (lastMousePos.current && ctx2 && tool.current)
-                    drawLine(ctx2, lastMousePos.current.x, lastMousePos.current.y, x, y);
+                  drawTrace(x, y);
                   lastMousePos.current = { x, y };
                 }
                 lastMousePos.current = undefined;
@@ -269,7 +306,12 @@ export default function PFPage() {
                   const x = e.clientX - rect.left;
                   const y = e.clientY - rect.top;
 
-                  const keys = getGridKeys(e, mainCanvas.current, settings.current, lastMousePos.current);
+                  const keys = getGridKeys(
+                    e,
+                    mainCanvas.current,
+                    settings.current,
+                    lastMousePos.current,
+                  );
                   if (!keys) return;
                   const changedItems: GridItem[] = [];
                   keys.forEach((key) => {
@@ -293,9 +335,7 @@ export default function PFPage() {
                   changedItems.forEach((gridItem) => {
                     drawSquare({ gridItem });
                   });
-                  const ctx2 = mainCanvas.current?.getContext("2d");
-                  if (lastMousePos.current && ctx2 && tool.current)
-                    drawLine(ctx2, lastMousePos.current.x, lastMousePos.current.y, x, y);
+                  drawTrace(x, y);
                   lastMousePos.current = { x, y };
                 } else {
                   lastMousePos.current = undefined;
@@ -320,7 +360,12 @@ export default function PFPage() {
 
                 if (e.buttons !== 1 && tool.current) return;
 
-                const keys = getGridKeys(e, mainCanvas.current, settings.current, lastMousePos.current);
+                const keys = getGridKeys(
+                  e,
+                  mainCanvas.current,
+                  settings.current,
+                  lastMousePos.current,
+                );
                 if (!keys) return;
                 const changedItems: GridItem[] = [];
                 keys.forEach((key) => {
@@ -344,9 +389,7 @@ export default function PFPage() {
                 changedItems.forEach((gridItem) => {
                   drawSquare({ gridItem });
                 });
-                const ctx2 = mainCanvas.current?.getContext("2d");
-                if (lastMousePos.current && ctx2 && tool.current)
-                  drawLine(ctx2, lastMousePos.current.x, lastMousePos.current.y, x, y);
+                drawTrace(x, y);
                 lastMousePos.current = { x, y };
               }}
             />
