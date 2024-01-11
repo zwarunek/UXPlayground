@@ -1,10 +1,10 @@
 import {Metadata} from "next";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import AppleUnboxSliderDemo from "@/app/(routing)/components/apple-unbox-slider/AppleUnboxSliderDemo";
+import AppleUnboxSliderDemo2 from "@/app/(routing)/components/apple-unbox-slider-2/AppleUnboxSliderDemo2";
 
 export const metadata: Metadata = {
-  title: "Apple Unbox Slider | ui-playground",
-  description: "Apple Unbox Slider | ui-playground",
+  title: "Apple Unbox Slider 2 | ui-playground",
+  description: "Apple Unbox Slider 2 | ui-playground",
 };
 
 export default function AppleUnboxSliderPage() {
@@ -17,7 +17,7 @@ export default function AppleUnboxSliderPage() {
           <CardTitle>Demo</CardTitle>
         </CardHeader>
         <CardContent>
-          <AppleUnboxSliderDemo />
+          <AppleUnboxSliderDemo2 />
         </CardContent>
       </Card>
     </div>

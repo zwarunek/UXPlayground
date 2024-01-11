@@ -1,23 +1,23 @@
 import {Metadata} from "next";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import AppleUnboxSliderDemo from "@/app/(routing)/components/apple-unbox-slider/AppleUnboxSliderDemo";
+import SplatDemo from "@/app/(routing)/components/splat/SplatDemo";
 
 export const metadata: Metadata = {
-  title: "Apple Unbox Slider | ui-playground",
-  description: "Apple Unbox Slider | ui-playground",
+  title: "Mitosis | ui-playground",
+  description: "Mitosis | ui-playground",
 };
 
-export default function AppleUnboxSliderPage() {
+export default function SplatDemoPage() {
   return (
     <div className={`flex flex-col w-full`}>
-      <h1 className={`text-4xl font-bold`}>Apple Unbox Slider</h1>
+      <h1 className={`text-4xl font-bold`}>Splat</h1>
 
       <Card className={`w-full`}>
         <CardHeader>
           <CardTitle>Demo</CardTitle>
         </CardHeader>
         <CardContent>
-          <AppleUnboxSliderDemo />
+          <SplatDemo />
         </CardContent>
       </Card>
     </div>
