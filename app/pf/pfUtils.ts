@@ -86,13 +86,6 @@ export function drawGrid(canvas: HTMLCanvasElement | null, {rows, cols, squareSi
   }
 }
 
-export function removeGrid(canvas: HTMLCanvasElement | null) {
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.reset();
-}
-
 export function getGridKeys(e: React.MouseEvent, canvas: HTMLCanvasElement | null, {rows, cols, squareSize, toolSize}: {rows: number, cols: number, squareSize: number, toolSize: number}, lastPos: {x: number, y: number} | undefined): [number, number][] | undefined {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
