@@ -132,11 +132,17 @@ export default function PFPage() {
     let [row, col] = gridItem.location;
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
-    col = col * squareSize - ((size)/2 - squareSize/2)
-    row = row * squareSize - ((size)/2 - squareSize/2)
+    const x = col * squareSize - ((size)/2 - squareSize/2)
+    const y = row * squareSize - ((size)/2 - squareSize/2)
     ctx.restore();
-    ctx.fillStyle = gridItem.type === "blank" ? "black" : "blue";
-    ctx.fillRect(col, row, size, size);
+    ctx.fillStyle = gridItem.type === "blank" ? "black" : "gray";
+    ctx.fillRect(x, y, size, size);
+    const circle = new Path2D();
+    circle.arc(x + squareSize/2, y + squareSize/2, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgb(185,91,91)";
+    ctx.fill(circle);
+    ctx.restore();
+    
     ctx.restore();
     if (size < squareSize) {
       requestAnimationFrame(() => drawSquare(gridItem, size + .1));

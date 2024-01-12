@@ -4,60 +4,6 @@ export type Point = {
   x: number;
   y: number;
 };
-
-export function isWithinPillShape(
-  start: Point,
-  end: Point,
-  radius: number,
-  squareTopLeft: Point,
-  squareSize: number,
-): boolean {
-  // Check for each point along the line segment from start to end
-  const deltaX = end.x - start.x;
-  const deltaY = end.y - start.y;
-  const steps = Math.max(Math.abs(deltaX), Math.abs(deltaY));
-
-  for (let i = 0; i <= steps; i++) {
-    const t = steps === 0 ? 0 : i / steps;
-    const circleCenter: Point = {
-      x: start.x + t * deltaX,
-      y: start.y + t * deltaY,
-    };
-
-    if (isCircleInSquare(circleCenter, radius, squareTopLeft, squareSize)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-export function isCircleInSquare(
-  circleCenter: Point,
-  radius: number,
-  squareTopLeft: Point,
-  squareSize: number,
-): boolean {
-  // Find the closest point to the circle within the square
-  let closestPoint: Point = {
-    x: Math.max(
-      squareTopLeft.x,
-      Math.min(circleCenter.x, squareTopLeft.x + squareSize),
-    ),
-    y: Math.max(
-      squareTopLeft.y,
-      Math.min(circleCenter.y, squareTopLeft.y + squareSize),
-    ),
-  };
-
-  // Calculate the distance from the closest point to the circle's center
-  let distanceX = circleCenter.x - closestPoint.x;
-  let distanceY = circleCenter.y - closestPoint.y;
-  let distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-
-  // Check if the circle is inside or touching the square
-  return distance <= radius;
-}
 export function drawLine(
   ctx: CanvasRenderingContext2D,
   x1: number,
@@ -112,31 +58,90 @@ export function getGridKeys(
 ): [number, number][] | undefined {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
-  const currentLocation = {
+  const currentLocation: Point = {
     x: e.clientX - rect.left,
     y: e.clientY - rect.top,
   };
 
   const keys: [number, number][] = [];
 
+  const lines = lastPos
+    ? findOuterLines(currentLocation, lastPos, toolSize)
+    : null;
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const squareTopLeft: Point = {
-        x: col * squareSize,
-        y: row * squareSize,
+      const squareCenter: Point = {
+        x: col * squareSize + squareSize / 2,
+        y: row * squareSize + squareSize / 2,
       };
       if (
-        isWithinPillShape(
-          lastPos || currentLocation,
-          currentLocation,
-          toolSize,
-          squareTopLeft,
-          squareSize,
-        )
+        isPointInCircle(squareCenter, { ...currentLocation, radius: toolSize })
+          || (lines && isPointInPolygon(
+            squareCenter,
+            [(lines.l1.p1), (lines.l1.p2), (lines.l2.p2), (lines.l2.p1)],
+        ))
       ) {
         keys.push([row, col]);
       }
     }
   }
   return keys;
+}
+
+function isPointInCircle(
+  point: Point,
+  circle: { radius: number } & Point,
+): boolean {
+  // Calculate the distance between the point and the circle's center
+  const dx = point.x - circle.x;
+  const dy = point.y - circle.y;
+  const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+
+  // Check if the distance is less than or equal to the radius
+  return distanceFromCenter <= circle.radius;
+}
+
+function isPointInPolygon(point: Point, polygon: Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+
+    const intersect = ((yi > point.y) != (yj > point.y))
+      && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+function findOuterLines(
+  point1: { x: number; y: number },
+  point2: { x: number; y: number },
+  radius: number,
+) {
+  const dx = point2.x - point1.x;
+  const dy = point2.y - point1.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  if (length < 20) {
+    return null;
+  }
+
+  // Normalized direction vector
+  const unitDx = dx / length;
+  const unitDy = dy / length;
+
+  // Calculate the perpendicular vector (normalized)
+  const perpDx = unitDy;
+  const perpDy = -unitDx;
+
+  // Find two points on each parallel line
+  const l1p1 = { x: point1.x + perpDx * radius, y: point1.y + perpDy * radius };
+  const l2p1 = { x: point1.x - perpDx * radius, y: point1.y - perpDy * radius };
+
+  const l1p2 = { x: point2.x + perpDx * radius, y: point2.y + perpDy * radius };
+  const l2p2 = { x: point2.x - perpDx * radius, y: point2.y - perpDy * radius };
+
+  return { l1: { p1: l1p1, p2: l1p2 }, l2: { p1: l2p1, p2: l2p2 } };
 }
