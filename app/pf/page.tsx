@@ -128,16 +128,19 @@ export default function PFPage() {
     drawGrid(gridLineCanvas.current, { rows, cols, squareSize });
   }, [rows, cols, squareSize]);
 
-  function drawSquare(gridItem: GridItem) {
+  function drawSquare(gridItem: GridItem, size = squareSize) {
     let [row, col] = gridItem.location;
     if (!ctxRef.current) return;
     const ctx = ctxRef.current;
-    col *= squareSize;
-    row *= squareSize;
+    col = col * squareSize - ((size)/2 - squareSize/2)
+    row = row * squareSize - ((size)/2 - squareSize/2)
     ctx.restore();
     ctx.fillStyle = gridItem.type === "blank" ? "black" : "blue";
-    ctx.fillRect(col, row, squareSize, squareSize);
+    ctx.fillRect(col, row, size, size);
     ctx.restore();
+    if (size < squareSize) {
+      requestAnimationFrame(() => drawSquare(gridItem, size + .1));
+    }
   }
 
   function initGrid() {
@@ -182,8 +185,8 @@ export default function PFPage() {
             setToolSize(v[0]);
             localStorage.setItem("toolSize", v[0].toString());
           }}
-          min={1}
-          max={60}
+          min={5}
+          max={65}
           step={15}
           className={`w-96`}
         />
@@ -302,11 +305,11 @@ export default function PFPage() {
                     }
                   }
                 });
-                changedItems.forEach(drawSquare);
+                changedItems.forEach((gridItem) => {
+                  drawSquare(gridItem);
+                });
                 if (tool.current) {
-                  const canvas = cursorCanvas.current;
-                  if (!canvas) return;
-                  const rect = canvas.getBoundingClientRect();
+                  const rect = e.currentTarget.getBoundingClientRect();
                   const x = e.clientX - rect.left;
                   const y = e.clientY - rect.top;
                   lastMousePos.current = { x, y };
@@ -348,7 +351,9 @@ export default function PFPage() {
                       }
                     }
                   });
-                  changedItems.forEach(drawSquare);
+                  changedItems.forEach((gridItem) => {
+                    drawSquare(gridItem);
+                  });
                   drawTrace(x, y);
                   lastMousePos.current = { x, y };
                 }
@@ -391,7 +396,9 @@ export default function PFPage() {
                       }
                     }
                   });
-                  changedItems.forEach(drawSquare);
+                  changedItems.forEach((gridItem) => {
+                    drawSquare(gridItem);
+                  });
                   drawTrace(x, y);
                   lastMousePos.current = { x, y };
                 } else {

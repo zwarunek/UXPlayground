@@ -58,7 +58,13 @@ export function isCircleInSquare(
   // Check if the circle is inside or touching the square
   return distance <= radius;
 }
-export function drawLine(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {
+export function drawLine(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+) {
   ctx.strokeStyle = "rgb(255,0,0)";
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -67,7 +73,14 @@ export function drawLine(ctx: CanvasRenderingContext2D, x1: number, y1: number, 
   ctx.restore();
 }
 
-export function drawGrid(canvas: HTMLCanvasElement | null, {rows, cols, squareSize}: {rows: number, cols: number, squareSize: number}) {
+export function drawGrid(
+  canvas: HTMLCanvasElement | null,
+  {
+    rows,
+    cols,
+    squareSize,
+  }: { rows: number; cols: number; squareSize: number },
+) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -77,16 +90,26 @@ export function drawGrid(canvas: HTMLCanvasElement | null, {rows, cols, squareSi
   ctx.lineWidth = 1;
   for (let i = 1; i < rows; i++) {
     ctx.rect(0, i * squareSize, cols * squareSize, 1);
-    ctx.fill()
+    ctx.fill();
   }
 
   for (let i = 1; i < cols; i++) {
     ctx.rect(i * squareSize, 0, 1, rows * squareSize);
-    ctx.fill()
+    ctx.fill();
   }
 }
 
-export function getGridKeys(e: React.MouseEvent, canvas: HTMLCanvasElement | null, {rows, cols, squareSize, toolSize}: {rows: number, cols: number, squareSize: number, toolSize: number}, lastPos: {x: number, y: number} | undefined): [number, number][] | undefined {
+export function getGridKeys(
+  e: React.MouseEvent,
+  canvas: HTMLCanvasElement | null,
+  {
+    rows,
+    cols,
+    squareSize,
+    toolSize,
+  }: { rows: number; cols: number; squareSize: number; toolSize: number },
+  lastPos: { x: number; y: number } | undefined,
+): [number, number][] | undefined {
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   const currentLocation = {
