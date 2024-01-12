@@ -48,46 +48,107 @@ export function drawGrid(
 export function getGridKeys(
   e: React.MouseEvent,
   canvas: HTMLCanvasElement | null,
-  {
-    rows,
-    cols,
-    squareSize,
-    toolSize,
-  }: { rows: number; cols: number; squareSize: number; toolSize: number },
+  { rows, cols, squareSize, toolSize }: { rows: number; cols: number; squareSize: number; toolSize: number },
   lastPos: { x: number; y: number } | undefined,
 ): [number, number][] | undefined {
   if (!canvas) return;
+
   const rect = canvas.getBoundingClientRect();
-  const currentLocation: Point = {
+  const currentLocation = {
     x: e.clientX - rect.left,
     y: e.clientY - rect.top,
   };
 
+  const currentSquare = {
+    row: Math.floor(currentLocation.y / squareSize),
+    col: Math.floor(currentLocation.x / squareSize),
+  };
+
   const keys: [number, number][] = [];
+  const visited = new Set();
+  const queue = [[currentSquare.row, currentSquare.col]];
 
   const lines = lastPos
     ? findOuterLines(currentLocation, lastPos, toolSize)
     : null;
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const squareCenter: Point = {
-        x: col * squareSize + squareSize / 2,
-        y: row * squareSize + squareSize / 2,
-      };
-      if (
-        isPointInCircle(squareCenter, { ...currentLocation, radius: toolSize })
-          || (lines && isPointInPolygon(
-            squareCenter,
-            [(lines.l1.p1), (lines.l1.p2), (lines.l2.p2), (lines.l2.p1)],
-        ))
-      ) {
-        keys.push([row, col]);
-      }
+  let squaresLookedAt = 0; // Counter for the number of squares looked at
+
+  while (queue.length > 0) {
+    const [row, col] = queue.shift();
+    if (row < 0 || row >= rows || col < 0 || col >= cols) continue;
+    const key = `${row},${col}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    squaresLookedAt++; // Increment the counter
+
+    const squareCenter = {
+      x: col * squareSize + squareSize / 2,
+      y: row * squareSize + squareSize / 2,
+    };
+
+    if (
+      isPointInCircle(squareCenter, { ...currentLocation, radius: toolSize }) ||
+      (lines && isPointInPolygon(
+        squareCenter,
+        [(lines.l1.p1), (lines.l1.p2), (lines.l2.p2), (lines.l2.p1)],
+      ))
+    ) {
+      keys.push([row, col]);
+      queue.push([row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]);
     }
   }
+
+  console.log(`Squares looked at: ${squaresLookedAt}`);
   return keys;
 }
+
+// export function getGridKeys(
+//   e: React.MouseEvent,
+//   canvas: HTMLCanvasElement | null,
+//   {
+//     rows,
+//     cols,
+//     squareSize,
+//     toolSize,
+//   }: { rows: number; cols: number; squareSize: number; toolSize: number },
+//   lastPos: { x: number; y: number } | undefined,
+// ): [number, number][] | undefined {
+//   if (!canvas) return;
+//   const rect = canvas.getBoundingClientRect();
+//   const currentLocation: Point = {
+//     x: e.clientX - rect.left,
+//     y: e.clientY - rect.top,
+//   };
+//
+//   const keys: [number, number][] = [];
+//
+//   const lines = lastPos
+//     ? findOuterLines(currentLocation, lastPos, toolSize)
+//     : null;
+//   let squaresLookedAt = 0
+//   for (let row = 0; row < rows; row++) {
+//     for (let col = 0; col < cols; col++) {
+//       squaresLookedAt++;
+//       const squareCenter: Point = {
+//         x: col * squareSize + squareSize / 2,
+//         y: row * squareSize + squareSize / 2,
+//       };
+//       if (
+//         isPointInCircle(squareCenter, { ...currentLocation, radius: toolSize })
+//           || (lines && isPointInPolygon(
+//             squareCenter,
+//             [(lines.l1.p1), (lines.l1.p2), (lines.l2.p2), (lines.l2.p1)],
+//         ))
+//       ) {
+//         keys.push([row, col]);
+//       }
+//     }
+//   }
+//   console.log(`Squares looked at: ${squaresLookedAt}`);
+//   return keys;
+// }
 
 function isPointInCircle(
   point: Point,
@@ -124,9 +185,9 @@ function findOuterLines(
   const dx = point2.x - point1.x;
   const dy = point2.y - point1.y;
   const length = Math.sqrt(dx * dx + dy * dy);
-  if (length < 20) {
-    return null;
-  }
+  // if (length < 20) {
+  //   return null;
+  // }
 
   // Normalized direction vector
   const unitDx = dx / length;

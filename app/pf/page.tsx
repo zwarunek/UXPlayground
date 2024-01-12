@@ -137,12 +137,6 @@ export default function PFPage() {
     ctx.restore();
     ctx.fillStyle = gridItem.type === "blank" ? "black" : "gray";
     ctx.fillRect(x, y, size, size);
-    const circle = new Path2D();
-    circle.arc(x + squareSize/2, y + squareSize/2, 4, 0, 2 * Math.PI);
-    ctx.fillStyle = "rgb(185,91,91)";
-    ctx.fill(circle);
-    ctx.restore();
-    
     ctx.restore();
     if (size < squareSize) {
       requestAnimationFrame(() => drawSquare(gridItem, size + .1));
